@@ -4,6 +4,6 @@ mod tests {
 
     #[test]
     fn init_game() {
-        assert_eq!(Game::new(), Game::new_board([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]));
+        assert_eq!(Ok(Game::new()), Game::new_board(vec![1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]));
     }
 }
