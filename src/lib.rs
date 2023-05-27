@@ -85,7 +85,7 @@ impl Game {
         }
     }
 
-    fn get_alive_neighbor_count(&self, index: usize) -> u8 {
+    pub fn get_alive_neighbor_count(&self, index: usize) -> u8 {
         // TODO check above, sides, bottom for 1s
         let offsets: [(i8, i8); 8] = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
         let mut count: u8 = 0;
@@ -96,7 +96,7 @@ impl Game {
         for (x, y) in offsets {
             let new_coord = (startx + x, starty + y);
             if new_coord.0 >= 0 && new_coord.0 < rowsize && new_coord.1 >= 0 && new_coord.1 < rowsize {
-                if get_index(self.row_size, new_coord.0 as u8, new_coord.1 as u8) == 1 {
+                if self.board[get_index(self.row_size, new_coord.0 as u8, new_coord.1 as u8)] == 1 {
                     count += 1;
                 }
             }
