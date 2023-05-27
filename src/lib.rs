@@ -1,4 +1,4 @@
-mod utils;
+pub mod utils;
 
 use std::fmt;
 use wasm_bindgen::prelude::*;
@@ -116,6 +116,19 @@ impl Game {
 
 }
 
+impl fmt::Debug for Game {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for item in self.board.iter().enumerate() {
+            let (i, c): (usize, &u8) = item;
+            if i != 0 && 0 == i%4 {
+                write!(f, "<br/>")?;
+            }
+            write!(f, "{}", c)?;
+        }
+        return Ok(());
+    }
+}
+
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for item in self.board.iter().enumerate() {
@@ -128,3 +141,19 @@ impl fmt::Display for Game {
         return Ok(());
     }
 }
+
+impl PartialEq for Game {
+    fn eq(&self, other: &Self) -> bool {
+        if self.board.len() != other.board.len() {
+            return false;
+        }
+
+        for (i, _) in self.board.iter().enumerate() {
+            if self.board[i] != other.board[i] {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+impl Eq for Game {}
