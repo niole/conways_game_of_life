@@ -1,5 +1,6 @@
 pub mod utils;
 
+use std::convert::TryInto;
 use std::fmt;
 use wasm_bindgen::prelude::*;
 
@@ -42,14 +43,29 @@ fn get_xy(index: usize, row_size: u8) -> (i8, i8) {
 
 #[wasm_bindgen]
 impl Game {
-    pub fn new() -> Game {
-        let mut board = [0; 16];
+    pub fn new_board(opt_board: Vec<u8>) -> Result<Game, String> {
+        if opt_board.len() != 16 {
+            return Err(String::from("bad length"));
+        }
+
+        let board = opt_board.try_into()
+            .unwrap_or_else(
+                |opt_board: Vec<u8>| panic!("Expected a Vec of length {} but it was {}", 16, opt_board.len())
+            );
         let row_size = 4;
-        board[get_index(row_size, 0, 0)] = 1;
-        board[get_index(row_size, 1, 0)] = 1;
-        board[get_index(row_size, 2, 0)] = 1;
-        return Game {
+        return Ok(Game {
             board,
+            row_size
+        });
+    }
+    pub fn new() -> Game {
+        let row_size = 4;
+        let mut default_board = [0; 16];
+        default_board[get_index(row_size, 0, 0)] = 1;
+        default_board[get_index(row_size, 1, 0)] = 1;
+        default_board[get_index(row_size, 2, 0)] = 1;
+        return Game {
+            board : default_board,
             row_size
         };
     }
