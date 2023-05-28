@@ -9,7 +9,7 @@ mod tests {
 
     #[test]
     fn get_live_neighbor_count() {
-        let game = &Game::new();
+        let game = Game::new();
         let n_count = game.get_alive_neighbor_count(5);
         assert_eq!(n_count, 3);
     }
