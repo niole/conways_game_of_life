@@ -21,6 +21,7 @@ pub fn greet(name: &str) {
     alert(&format!("Hello, {}", name));
 }
 
+#[derive(Debug)]
 #[wasm_bindgen]
 pub struct Game {
     board: [u8; 16],
@@ -131,19 +132,6 @@ impl Game {
         return updates;
     }
 
-}
-
-impl fmt::Debug for Game {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for item in self.board.iter().enumerate() {
-            let (i, c): (usize, &u8) = item;
-            if i != 0 && 0 == i%4 {
-                write!(f, "<br/>")?;
-            }
-            write!(f, "{}", c)?;
-        }
-        return Ok(());
-    }
 }
 
 impl fmt::Display for Game {
