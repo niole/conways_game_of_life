@@ -45,6 +45,14 @@ fn get_xy(index: usize, row_size: u8) -> (i8, i8) {
 
 #[wasm_bindgen]
 impl Game {
+
+    pub fn board(&self) -> *const u8 {
+        return self.board.as_ptr();
+    }
+
+    /**
+     * Creates new board with custom state
+     */
     pub fn new_board(opt_board: Vec<u8>) -> Result<Game, String> {
         if opt_board.len() != 16 {
             return Err(String::from("bad length"));
@@ -60,6 +68,10 @@ impl Game {
             row_size
         });
     }
+
+    /**
+     * Creates new game with default state
+     */
     pub fn new() -> Game {
         let row_size = 4;
         let mut default_board = [0; 16];
@@ -72,10 +84,16 @@ impl Game {
         };
     }
 
+    /**
+     * renders the boards state as an html string of a number grid
+     */
     pub fn render(&mut self) -> String {
         return self.to_string();
     }
 
+    /**
+     * Updates the board state
+     */
     pub fn on_tick(&mut self) {
         self.apply_updates();
     }
@@ -106,6 +124,9 @@ impl Game {
         return count;
     }
 
+    /**
+     * Generates updates to apply to board
+     */
     fn generate_updates(&self) -> Vec<Update> {
         let mut updates: Vec<Update> = vec![];
         for item in self.board.iter().enumerate() {
