@@ -1,5 +1,6 @@
 pub mod utils;
 
+use rand::prelude::*;
 use std::convert::TryInto;
 use std::fmt;
 use wasm_bindgen::prelude::*;
@@ -11,9 +12,15 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+const BOARD_SIZE: usize = 1296;
+const ROW_SIZE: u8 = 36;
+
 #[wasm_bindgen]
 extern {
     fn alert(s: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 }
 
 #[wasm_bindgen]
@@ -21,16 +28,24 @@ pub fn greet(name: &str) {
     alert(&format!("Hello, {}", name));
 }
 
+#[wasm_bindgen]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Cell {
+    Dead = 0,
+    Alive = 1,
+}
+
 #[derive(Debug)]
 #[wasm_bindgen]
 pub struct Game {
-    board: [u8; 16],
+    board: Vec<Cell>,
     row_size: u8,
 }
 
 struct Update {
     index: usize,
-    value: u8,
+    value: Cell,
 }
 
 fn get_index(row_size: u8, row: u8, col: u8) -> usize {
@@ -46,41 +61,32 @@ fn get_xy(index: usize, row_size: u8) -> (i8, i8) {
 #[wasm_bindgen]
 impl Game {
 
-    pub fn board(&self) -> *const u8 {
+    pub fn row_size(&self) -> u8 {
+        return self.row_size;
+    }
+
+    pub fn board(&self) -> *const Cell {
         return self.board.as_ptr();
     }
 
     /**
-     * Creates new board with custom state
-     */
-    pub fn new_board(opt_board: Vec<u8>) -> Result<Game, String> {
-        if opt_board.len() != 16 {
-            return Err(String::from("bad length"));
-        }
-
-        let board = opt_board.try_into()
-            .unwrap_or_else(
-                |opt_board: Vec<u8>| panic!("Expected a Vec of length {} but it was {}", 16, opt_board.len())
-            );
-        let row_size = 4;
-        return Ok(Game {
-            board,
-            row_size
-        });
-    }
-
-    /**
-     * Creates new game with default state
+     * Creates random game
      */
     pub fn new() -> Game {
-        let row_size = 4;
-        let mut default_board = [0; 16];
-        default_board[get_index(row_size, 0, 0)] = 1;
-        default_board[get_index(row_size, 1, 0)] = 1;
-        default_board[get_index(row_size, 2, 0)] = 1;
+        let mut board: Vec<Cell> = Vec::with_capacity(BOARD_SIZE.try_into().unwrap());
+        let mut rng = rand::thread_rng();
+        let mut i: usize = 0;
+        while i < BOARD_SIZE {
+            if rng.gen::<f64>().round() == 1.0 {
+                board.push(Cell::Alive);
+            } else {
+                board.push(Cell::Dead);
+            }
+            i += 1;
+        }
         return Game {
-            board : default_board,
-            row_size
+            board,
+            row_size: ROW_SIZE
         };
     }
 
@@ -106,7 +112,6 @@ impl Game {
     }
 
     pub fn get_alive_neighbor_count(&self, index: usize) -> u8 {
-        // TODO check above, sides, bottom for 1s
         let offsets: [(i8, i8); 8] = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
         let mut count: u8 = 0;
 
@@ -116,7 +121,7 @@ impl Game {
         for (x, y) in offsets {
             let new_coord = (startx + x, starty + y);
             if new_coord.0 >= 0 && new_coord.0 < rowsize && new_coord.1 >= 0 && new_coord.1 < rowsize {
-                if self.board[get_index(self.row_size, new_coord.0 as u8, new_coord.1 as u8)] == 1 {
+                if self.board[get_index(self.row_size, new_coord.0 as u8, new_coord.1 as u8)] == Cell::Alive {
                     count += 1;
                 }
             }
@@ -130,24 +135,24 @@ impl Game {
     fn generate_updates(&self) -> Vec<Update> {
         let mut updates: Vec<Update> = vec![];
         for item in self.board.iter().enumerate() {
-            let (i, c): (usize, &u8) = item;
+            let (i, c): (usize, &Cell) = item;
             let live_n_count = self.get_alive_neighbor_count(i);
             let index = i;
 
-            if live_n_count < 2 && 1 == *c {
-                // live cell dies from underpopulation
-                let value = 0;
-                updates.push(Update { index, value });
-            } else if live_n_count == 2 || live_n_count == 3 && 1 == *c {
-                // live cell lives on
-            } else if live_n_count > 3 && 1 == *c {
-                // overpopulated cell dies
-                let value = 0;
-                updates.push(Update { index, value });
-            } else if live_n_count == 3 && 0 == *c {
+            if *c == Cell::Dead && live_n_count == 3 {
                 // dead cell becomes alive
-                let value = 1;
-                updates.push(Update { index, value });
+                updates.push(Update { index, value: Cell::Alive });
+            }
+
+            if *c == Cell::Alive {
+                 if live_n_count < 2 {
+                     updates.push(Update { index, value: Cell::Dead });
+                 } else if live_n_count == 2 || live_n_count == 3  {
+                     // live on
+                 } else if live_n_count > 3 {
+                     // overpopulated cell dies
+                     updates.push(Update { index, value: Cell::Dead });
+                 }
             }
         }
         return updates;
@@ -155,10 +160,17 @@ impl Game {
 
 }
 
+impl fmt::Display for Cell {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self);
+        return Ok(());
+    }
+}
+
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for item in self.board.iter().enumerate() {
-            let (i, c): (usize, &u8) = item;
+            let (i, c): (usize, &Cell) = item;
             if i != 0 && 0 == i%4 {
                 write!(f, "<br/>")?;
             }
