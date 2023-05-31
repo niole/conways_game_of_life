@@ -1,7 +1,6 @@
 pub mod utils;
 
 use rand::prelude::*;
-use std::convert::TryInto;
 use std::fmt;
 use wasm_bindgen::prelude::*;
 
@@ -73,17 +72,16 @@ impl Game {
      * Creates random game
      */
     pub fn new() -> Game {
-        let mut board: Vec<Cell> = Vec::with_capacity(BOARD_SIZE.try_into().unwrap());
         let mut rng = rand::thread_rng();
-        let mut i: usize = 0;
-        while i < BOARD_SIZE {
-            if rng.gen::<f64>().round() == 1.0 {
-                board.push(Cell::Alive);
-            } else {
-                board.push(Cell::Dead);
-            }
-            i += 1;
-        }
+        let board: Vec<Cell> = (0..BOARD_SIZE)
+            .map(|_| {
+                if rng.gen::<f64>().round() == 1.0 {
+                    return Cell::Alive;
+                } else {
+                    return Cell::Dead;
+                }
+            }).collect();
+
         return Game {
             board,
             row_size: ROW_SIZE
@@ -162,8 +160,7 @@ impl Game {
 
 impl fmt::Display for Cell {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self);
-        return Ok(());
+        return write!(f, "{}", self);
     }
 }
 
